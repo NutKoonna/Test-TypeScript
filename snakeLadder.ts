@@ -3,56 +3,61 @@ interface Board {
     snakes: [number, number][];
 }
 
-function quickestPath(board: Board): number[][] {
+function quickestPath(board: Board): number[] {
     const maxPosition: number = 100;
-    const paths: number[][] = [];
-    const queue: [number, number[]][] = [[1, []]];
-    const maxRolls: number = 5;
-    // จำนวนครั้งที่น้อยที่สุดในการโยนลูกเต๋าเพื่อที่จะไปถึง 100 คือ 5 ครั้ง ดังนั้นจึงเก็บเฉพาะ path ที่โยนเต๋า 5 ครั้งแล้วถึง 100 เท่านั้น
-    // ไม่สนใจกรณีทอยลูกเต๋าเกิน 100 แล้วต้องเดินกลับ เพราะว่าต้องโยนเต๋ามากกว่า 5 ครั้ง 
+    const visited: Set<number> = new Set();
+    const queue: [number, number[]][] = [[1, []]]; // [position, path]
 
     while (queue.length > 0) {
         const [currentPos, currentPath] = queue.shift()!;
 
-        if (currentPath.length === maxRolls && currentPos === maxPosition) {
-            paths.push(currentPath); 
+        if (currentPos === maxPosition) {
+            return currentPath;
         }
 
-        if (currentPath.length >= maxRolls || currentPos >= maxPosition) {
-            continue;
-        }
+        if (!visited.has(currentPos)) {
+            visited.add(currentPos);
+    
+            for (let dice = 1; dice <= 6; dice++) {
+                const newPosition: number = currentPos + dice;
+                const newPath: number[] = [...currentPath, dice];
+                let isOnLadderOrSnake: boolean = false;
 
-        for (let dice = 1; dice <= 6; dice++) {
-            const newPosition: number = currentPos + dice;
-            const newPath: number[] = [...currentPath, dice]; 
-
-            for (const [start, end] of board.ladders) {
-                if (start === newPosition) {
-                    queue.push([end, newPath]); 
-                    break;
+                // Check if newPosition is on a ladder or snake
+                for (const [start, end] of board.ladders) {
+                    if (start === newPosition) {
+                        queue.push([end, newPath]);
+                        isOnLadderOrSnake = true;
+                        break;
+                    }
                 }
-            }
 
-            for (const [start, end] of board.snakes) {
-                if (start === newPosition) {
-                    queue.push([end, newPath]); 
-                    break;
+                for (const [start, end] of board.snakes) {
+                    if (start === newPosition) {
+                        queue.push([end, newPath]);
+                        isOnLadderOrSnake = true;
+                        break;
+                    }
                 }
-            }
 
-            if (newPosition <= maxPosition) {
-                queue.push([newPosition, newPath]);
+                if (!isOnLadderOrSnake) {
+                    // If newPosition is greater than 100, go back
+                    if (newPosition > maxPosition) {
+                        const correctedPosition: number = (2 * maxPosition) - newPosition;
+                        queue.push([correctedPosition, newPath]);
+                    } else {
+                        queue.push([newPosition, newPath]);
+                    }
+                }
             }
         }
     }
-
-    return paths;
+    return [];
 }
 
-const paths: number[][] = quickestPath({
+const result: number[] = quickestPath({
     ladders: [[3, 39], [14, 35], [31, 70], [44, 65], [47, 86], [63, 83], [71, 93]],
     snakes: [[21, 4], [30, 8], [55, 38], [79, 42], [87, 54], [91, 48], [96, 66]]
 });
 
-// paths ที่ได้จะเป็นคำตอบทั้งหมดของการโยนเต๋าน้อยครั้งที่สุุดที่เป็นไปได้
-console.log(paths); 
+console.log(result); 
